@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工時記錄器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自訂樣式 */
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #FFF0F5; /* 淡粉紅色背景 */
+        }
+        /* 主要容器樣式 */
+        .main-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #FFFFFF; /* 白色背景 */
+            border-radius: 1.5rem; /* 大圓角 */
+            box-shadow: 0 10px 25px -5px rgba(219, 39, 119, 0.1), 0 8px 10px -6px rgba(219, 39, 119, 0.1); /* 粉色柔和陰影 */
+            position: relative; /* 為了貓咪定位 */
+            overflow: hidden; /* 避免貓咪超出範圍 */
+        }
+        /* 按鈕基本樣式 */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.75rem; /* 圓角 */
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* 按鈕禁用樣式 */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* 主要按鈕樣式 (粉色) */
+        .btn-primary {
+            background-color: #EC4899; /* 粉紅色 */
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #DB2777; /* 深一點的粉紅色 */
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(219, 39, 119, 0.2), 0 4px 6px -4px rgba(219, 39, 119, 0.2);
+        }
+        /* 次要按鈕樣式 (奶油色) */
+        .btn-secondary {
+            background-color: #FFFBEB; /* 奶油色 */
+            color: #D97706; /* 搭配的文字顏色 */
+            border: 1px solid #FDE68A;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #FEF3C7;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.1), 0 4px 6px -4px rgba(245, 158, 11, 0.1);
+        }
+        /* 圖示按鈕樣式 */
+        .icon-btn {
+            background: none;
+            border: none;
+            padding: 0.25rem;
+            cursor: pointer;
+            color: #9CA3AF; /* 灰色 */
+            transition: color 0.3s ease;
+        }
+        .icon-btn:hover {
+            color: #EC4899; /* 粉紅色 */
+        }
+        /* 區塊標題樣式 */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #DB2777; /* 深粉紅色 */
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #F9A8D4; /* 淺粉紅底線 */
+            display: inline-block; /* 讓底線只跟著文字長度 */
+        }
+        /* 輸入框樣式 */
+        input[type="text"], textarea {
+            border: 1px solid #FBCFE8; /* 粉色邊框 */
+            border-radius: 0.75rem; /* 圓角 */
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            width: 100%;
+        }
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #EC4899; /* 粉色 */
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2); /* 粉色外光暈 */
+        }
+        input[readonly], input.bg-gray-100[readonly] { /* Style readonly fields */
+             background-color: #f3f4f6; /* Lighter gray */
+             cursor: default;
+             opacity: 0.7;
+        }
+        /* 待辦事項完成樣式 */
+        .todo-item.completed span {
+            text-decoration: line-through;
+            color: #9CA3AF; /* 灰色 */
+        }
+        /* 貓咪 SVG 樣式 */
+        .cat-illustration {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 100px; /* 調整貓咪大小 */
+            height: auto;
+            opacity: 0.8; /* 稍微透明一點 */
+            pointer-events: none; /* 避免擋住操作 */
+        }
+        /* 碼錶樣式 */
+        #timerDisplay {
+            font-size: 3.5rem; /* 放大碼錶字體 */
+            font-weight: bold;
+            color: #374151; /* 深灰色 */
+            background-color: #FFFBEB; /* 奶油色背景 */
+            padding: 1rem 2rem;
+            border-radius: 1rem; /* 圓角 */
+            display: inline-block; /* 使背景符合內容寬度 */
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* 內陰影增加立體感 */
+            letter-spacing: 2px; /* 增加字間距 */
+            min-width: 280px; /* 確保寬度 */
+            text-align: center;
+        }
+        /* 紀錄卡片樣式 */
+        .record-card {
+            background-color: #FFFBEB; /* 奶油色 */
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #F9A8D4; /* 左側粉色邊框 */
+        }
+        /* Modal 樣式 */
+        .modal {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* 半透明黑色背景 */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; /* 垂直置中 */
+            padding: 25px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+        }
+        /* 讀取中/儲存中提示 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 60; /* 確保在 modal 之上 */
+            font-weight: bold;
+            color: #EC4899;
+            border-radius: 1rem; /* Match modal content */
+        }
+        /* Spinner for loading state */
+        .spinner {
+          border: 4px solid rgba(0, 0, 0, 0.1);
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border-left-color: #EC4899;
+          margin-right: 10px;
+          animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <div class="main-container">
+
+        <h1 class="text-3xl font-bold text-center mb-8 text-pink-600">工時記錄器</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <div class="space-y-6">
+                <section class="text-center p-6 bg-white rounded-xl shadow-md border border-pink-100">
+                    <h2 class="section-title mb-4">⏱️ 計時區</h2>
+                    <div id="timerDisplay">00:00:00</div>
+                    <div class="mt-6 space-x-4">
+                        <button id="startPauseBtn" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                            開始
+                        </button>
+                        <button id="endBtn" class="btn btn-secondary" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 10a2 2 0 104 0 2 2 0 00-4 0z" clip-rule="evenodd" />
+                            </svg>
+                            結束
+                        </button>
+                    </div>
+                </section>
+
+                <section class="p-6 bg-white rounded-xl shadow-md border border-pink-100">
+                    <h2 class="section-title mb-4">📑 工作紀錄清單</h2>
+                    <div id="recordList" class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                        <p class="text-gray-500 italic">目前沒有任何紀錄...</p>
+                    </div>
+                     <button id="exportBtn" class="btn btn-primary mt-6 w-full flex items-center justify-center" title="將所有紀錄傳送到 Google Sheet">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        匯出所有紀錄
+                    </button>
+                </section>
+            </div>
+
+            <div class="space-y-6">
+                <section class="p-6 bg-white rounded-xl shadow-md border border-pink-100 h-full flex flex-col">
+                    <h2 class="section-title mb-4">📝 待辦清單</h2>
+                    <div class="flex mb-4">
+                        <input type="text" id="newTodoInput" placeholder="新增待辦事項..." class="flex-grow mr-2">
+                        <button id="addTodoBtn" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="todoList" class="space-y-2 overflow-y-auto flex-grow pr-2">
+                        <p class="text-gray-500 italic">目前沒有待辦事項...</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <svg class="cat-illustration" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#FBCFE8" d="M48.1,-61.3C62.2,-53.1,73.4,-39.8,79.5,-24.8C85.6,-9.8,86.6,6.9,80.8,21.2C75,35.5,62.4,47.4,49.1,56.9C35.8,66.4,21.8,73.4,6.9,74.7C-8,76,-23.8,71.5,-38.8,64.1C-53.8,56.7,-67.9,46.4,-75.5,32.9C-83.1,19.4,-84.1,2.7,-79.9,-12.5C-75.7,-27.7,-66.3,-41.4,-54.1,-49.6C-41.9,-57.8,-26.9,-60.5,-13.4,-63.5C0,-66.5,14,-69.6,28.1,-70.5C42.2,-71.4,56.3,-70.1,60.4,-61.3" transform="translate(100 100) scale(0.9)"> </path>
+           <circle cx="90" cy="90" r="5" fill="#374151"/>
+          <circle cx="110" cy="90" r="5" fill="#374151"/>
+          <path d="M 95 105 Q 100 115 105 105" stroke="#374151" stroke-width="2" fill="none"/>
+        </svg>
+
+    </div>
+
+    <div id="recordModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="closeModalBtn">&times;</span>
+        <h3 class="text-xl font-bold mb-4 text-pink-600">記錄本次工作</h3>
+        <div class="space-y-3">
+            <input type="hidden" id="recordId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+                <input type="text" id="startTime" class="bg-gray-100" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+                <input type="text" id="endTime" class="bg-gray-100" readonly>
+            </div>
+             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">工作時數 (小時)</label>
+                <input type="text" id="duration" class="bg-gray-100" readonly>
+            </div>
+            <div>
+                <label for="workContent" class="block text-sm font-medium text-gray-700 mb-1">工作內容</label>
+                <input type="text" id="workContent" placeholder="請輸入工作內容...">
+            </div>
+            <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                <textarea id="notes" rows="3" placeholder="選填"></textarea>
+            </div>
+            <div class="text-right pt-3">
+                <button id="saveRecordBtn" class="btn btn-primary">儲存紀錄</button>
+            </div>
+        </div>
+         <div id="modalLoading" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div> 儲存中...
+        </div>
+      </div>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const timerDisplay = document.getElementById('timerDisplay');
+        const startPauseBtn = document.getElementById('startPauseBtn');
+        const endBtn = document.getElementById('endBtn');
+        const recordList = document.getElementById('recordList');
+        const exportBtn = document.getElementById('exportBtn');
+        const newTodoInput = document.getElementById('newTodoInput');
+        const addTodoBtn = document.getElementById('addTodoBtn');
+        const todoList = document.getElementById('todoList');
+
+        // Modal elements
+        const recordModal = document.getElementById('recordModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveRecordBtn = document.getElementById('saveRecordBtn');
+        const recordIdInput = document.getElementById('recordId');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const durationInput = document.getElementById('duration');
+        const workContentInput = document.getElementById('workContent');
+        const notesInput = document.getElementById('notes');
+        const modalLoading = document.getElementById('modalLoading');
+
+
+        // --- Timer State ---
+        let timerInterval = null;
+        let startTime = null; // Date object when timer started
+        let pausedTime = 0; // Total time paused in milliseconds
+        let pauseStart = null; // Timestamp when pause started
+        let isRunning = false;
+
+        // --- Data Storage ---
+        let workRecords = []; // Initialized in initializeApp
+        let todos = [];       // Initialized in initializeApp
+
+        // --- Google Apps Script URL ---
+        // !!! IMPORTANT: Replace with your actual Google Apps Script Web App URL !!!
+        const googleScriptURL = "https://script.google.com/macros/s/AKfycbwL3oVPjgwDmc2_cntH29Iktu7oLpR_Hkeg0MpwmFVrIcXSIzgRyqfGVwTsrqmZR0qs0w/exec";
+
+
+        // --- Helper Functions ---
+        /**
+         * Formats milliseconds into HH:MM:SS string
+         * @param {number} ms - Milliseconds
+         * @returns {string} Formatted time string
+         */
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        /**
+         * Formats Date object into a readable string (e.g., YYYY/MM/DD HH:MM)
+         * @param {Date} date - Date object
+         * @returns {string} Formatted date string
+         */
+        function formatDateTime(date) {
+            if (!date || isNaN(date)) return ''; // Check for invalid date
+            try {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}/${month}/${day} ${hours}:${minutes}`;
+            } catch (e) {
+                console.error("Error formatting date:", date, e);
+                return ''; // Return empty string on error
+            }
+        }
+
+
+        /**
+         * Calculates duration in hours (float with 2 decimal places)
+         * @param {number} ms - Duration in milliseconds
+         * @returns {string} Duration in hours
+         */
+        function formatDurationHours(ms) {
+            if (ms === null || ms === undefined || ms <= 0) return '0.00';
+            const hours = ms / (1000 * 60 * 60);
+            return hours.toFixed(2);
+        }
+
+        /**
+         * Updates the timer display
+         */
+        function updateTimerDisplay() {
+            if (!isRunning && pausedTime === 0 && !startTime) {
+                 timerDisplay.textContent = '00:00:00';
+                 return;
+            }
+
+            const now = Date.now();
+            let elapsed;
+            if (isRunning) {
+                elapsed = now - startTime - pausedTime;
+            } else { // Paused
+                // If pauseStart exists, calculate time up to pause point
+                elapsed = pauseStart ? pauseStart - startTime - pausedTime : (startTime ? 0 - startTime - pausedTime : 0); // Handle case where paused immediately
+            }
+            timerDisplay.textContent = formatTime(Math.max(0, elapsed)); // Ensure non-negative
+        }
+
+        // --- Timer Logic ---
+        function startTimer() {
+            if (isRunning) return; // Already running
+
+            if (startTime === null) { // First start
+                startTime = Date.now();
+                pausedTime = 0;
+            } else { // Resume from pause
+                // Calculate time spent paused and add to pausedTime
+                pausedTime += (pauseStart ? Date.now() - pauseStart : 0);
+                pauseStart = null; // Reset pause start time
+            }
+
+            isRunning = true;
+            startPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                暫停`;
+            startPauseBtn.classList.replace('btn-primary', 'btn-secondary'); // Change style
+            endBtn.disabled = false; // Enable end button
+
+            // Clear any existing interval before starting a new one
+            clearInterval(timerInterval);
+            // Update immediately, then set interval
+            updateTimerDisplay();
+            timerInterval = setInterval(updateTimerDisplay, 1000); // Update every second
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return; // Already paused or stopped
+
+            clearInterval(timerInterval);
+            timerInterval = null;
+            pauseStart = Date.now(); // Record when pause started
+            isRunning = false;
+
+            startPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                繼續`;
+            startPauseBtn.classList.replace('btn-secondary', 'btn-primary'); // Change style back
+            // Update display one last time to show the exact pause time
+            updateTimerDisplay();
+        }
+
+        function endTimer() {
+            if (startTime === null) return; // Timer never started
+
+            const endTime = Date.now();
+            let finalElapsedTime;
+
+            if (isRunning) { // If ended while running
+                clearInterval(timerInterval); // Stop interval if it was running
+                finalElapsedTime = endTime - startTime - pausedTime;
+            } else { // If ended while paused
+                // Use pauseStart to get the duration up to the point of pausing
+                finalElapsedTime = pauseStart ? pauseStart - startTime - pausedTime : 0; // Handle case where paused immediately
+            }
+             finalElapsedTime = Math.max(0, finalElapsedTime); // Ensure non-negative duration
+
+            // --- Prepare data for modal ---
+            const startDate = new Date(startTime);
+            const endDate = new Date(endTime); // Use the actual end time
+
+            // Reset timer state
+            isRunning = false;
+            startTime = null;
+            pausedTime = 0;
+            pauseStart = null;
+            timerInterval = null; // Ensure interval is cleared
+
+            // Update UI
+            timerDisplay.textContent = '00:00:00';
+            startPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                開始`;
+             startPauseBtn.classList.replace('btn-secondary', 'btn-primary'); // Reset style
+            endBtn.disabled = true;
+
+            // --- Open Modal ---
+            openRecordModal(null, startDate, endDate, finalElapsedTime); // Open in 'new record' mode
+        }
+
+        // --- Record Management ---
+        function saveRecords() {
+            try {
+                localStorage.setItem('workRecords', JSON.stringify(workRecords));
+            } catch (e) {
+                console.error("Error saving records to localStorage:", e);
+                alert("無法儲存紀錄，您的瀏覽器儲存空間可能已滿或不支援。");
+            }
+        }
+
+        function renderRecords() {
+            recordList.innerHTML = ''; // Clear existing list
+            if (workRecords.length === 0) {
+                recordList.innerHTML = '<p class="text-gray-500 italic">目前沒有任何紀錄...</p>';
+                return;
+            }
+
+            // Sort records by start time, newest first
+            const sortedRecords = [...workRecords].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+            sortedRecords.forEach(record => {
+                const card = document.createElement('div');
+                card.className = 'record-card flex justify-between items-start'; // Use flex for layout
+                // Ensure dates are parsed correctly before formatting
+                const recordStartTime = record.startTime ? new Date(record.startTime) : null;
+                const recordEndTime = record.endTime ? new Date(record.endTime) : null;
+
+                card.innerHTML = `
+                    <div class="flex-grow mr-4 min-w-0"> <p class="font-semibold text-pink-700 break-words">${record.content || '未命名工作'}</p>
+                        <p class="text-sm text-gray-600">
+                            <span class="font-medium">時間：</span>${formatDateTime(recordStartTime)} - ${formatDateTime(recordEndTime)}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <span class="font-medium">時數：</span>${formatDurationHours(record.duration)} 小時
+                        </p>
+                        ${record.notes ? `<p class="text-sm text-gray-500 mt-1 break-words"><span class="font-medium">備註：</span>${record.notes}</p>` : ''}
+                    </div>
+                    <div class="flex-shrink-0 space-x-2">
+                        <button class="icon-btn edit-record-btn" data-id="${record.id}" title="編輯">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                              <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button class="icon-btn delete-record-btn" data-id="${record.id}" title="刪除">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                recordList.appendChild(card);
+            });
+
+            // Add event listeners after rendering
+            document.querySelectorAll('.edit-record-btn').forEach(btn => {
+                btn.addEventListener('click', handleEditRecord);
+            });
+            document.querySelectorAll('.delete-record-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteRecord);
+            });
+        }
+
+        function addRecord(recordData) {
+            // Ensure data integrity
+            if (!recordData.startTime || !recordData.endTime || typeof recordData.duration !== 'number' || isNaN(recordData.startTime) || isNaN(recordData.endTime)) {
+                console.error("Invalid record data:", recordData);
+                alert("儲存紀錄時發生錯誤：資料格式不正確。");
+                return;
+            }
+            const newRecord = {
+                id: Date.now().toString(), // Simple unique ID
+                startTime: recordData.startTime.toISOString(), // Store as ISO string
+                endTime: recordData.endTime.toISOString(),   // Store as ISO string
+                duration: recordData.duration, // Milliseconds
+                content: recordData.content || '', // Ensure content is string
+                notes: recordData.notes || ''     // Ensure notes is string
+            };
+            workRecords.push(newRecord);
+            saveRecords();
+            renderRecords();
+        }
+
+         function updateRecord(id, updatedData) {
+            workRecords = workRecords.map(record => {
+                if (record.id === id) {
+                    // Only update content and notes in edit mode
+                    return {
+                        ...record,
+                        content: updatedData.content || '', // Ensure content is string
+                        notes: updatedData.notes || ''     // Ensure notes is string
+                    };
+                }
+                return record;
+            });
+            saveRecords();
+            renderRecords();
+        }
+
+        function deleteRecord(id) {
+            workRecords = workRecords.filter(record => record.id !== id);
+            saveRecords();
+            renderRecords();
+        }
+
+        function handleEditRecord(event) {
+             const id = event.currentTarget.dataset.id;
+             const recordToEdit = workRecords.find(record => record.id === id);
+             if (recordToEdit) {
+                 // Ensure dates are valid before passing to modal
+                 const startTime = recordToEdit.startTime ? new Date(recordToEdit.startTime) : null;
+                 const endTime = recordToEdit.endTime ? new Date(recordToEdit.endTime) : null;
+                 if (startTime && endTime && !isNaN(startTime) && !isNaN(endTime)) {
+                    openRecordModal(recordToEdit.id, startTime, endTime, recordToEdit.duration, recordToEdit.content, recordToEdit.notes);
+                 } else {
+                    console.error("Invalid date found in record:", recordToEdit);
+                    alert("無法編輯此紀錄：紀錄中的時間格式錯誤。");
+                 }
+             }
+        }
+
+        function handleDeleteRecord(event) {
+             const id = event.currentTarget.dataset.id;
+             if (confirm('確定要刪除這筆紀錄嗎？')) {
+                 deleteRecord(id);
+             }
+        }
+
+
+        // --- To-Do List Management ---
+        function saveTodos() {
+             try {
+                localStorage.setItem('todos', JSON.stringify(todos));
+            } catch (e) {
+                console.error("Error saving todos to localStorage:", e);
+                alert("無法儲存待辦事項，您的瀏覽器儲存空間可能已滿或不支援。");
+            }
+        }
+
+        function renderTodos() {
+            todoList.innerHTML = ''; // Clear list
+             if (todos.length === 0) {
+                todoList.innerHTML = '<p class="text-gray-500 italic">目前沒有待辦事項...</p>';
+                return;
+            }
+
+            todos.forEach(todo => {
+                const item = document.createElement('div');
+                // Add transition for smoother appearance changes
+                item.className = `todo-item flex items-center justify-between p-2 rounded-lg hover:bg-pink-50 transition-colors duration-200 ${todo.completed ? 'completed bg-pink-50' : ''}`;
+                item.dataset.id = todo.id;
+                // Sanitize text before inserting into HTML to prevent XSS
+                const sanitizedText = document.createElement('span');
+                sanitizedText.textContent = todo.text;
+
+                item.innerHTML = `
+                    <div class="flex items-center flex-grow mr-2 min-w-0"> <input type="checkbox" class="mr-3 h-5 w-5 text-pink-500 border-pink-300 rounded focus:ring-pink-400 todo-checkbox flex-shrink-0" ${todo.completed ? 'checked' : ''}>
+                        <span class="flex-grow break-words ${todo.completed ? 'text-gray-400 line-through' : ''}">${sanitizedText.innerHTML}</span>
+                         <input type="text" class="edit-todo-input hidden flex-grow border-pink-300 rounded px-1 py-0.5 mr-2" value="${todo.text}">
+                    </div>
+                    <div class="space-x-1 flex-shrink-0">
+                         <button class="icon-btn save-todo-btn hidden" title="儲存">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                             </svg>
+                         </button>
+                         <button class="icon-btn edit-todo-btn" title="編輯">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                              <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button class="icon-btn delete-todo-btn" title="刪除">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                               <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                             </svg>
+                        </button>
+                    </div>
+                `;
+                todoList.appendChild(item);
+            });
+
+             // Add event listeners for todos
+            document.querySelectorAll('.todo-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleToggleTodo);
+            });
+             document.querySelectorAll('.edit-todo-btn').forEach(btn => {
+                btn.addEventListener('click', handleEditTodo);
+            });
+             document.querySelectorAll('.save-todo-btn').forEach(btn => {
+                btn.addEventListener('click', handleSaveTodo);
+            });
+            document.querySelectorAll('.delete-todo-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteTodo);
+            });
+             // Add listener for Enter key in edit input
+            document.querySelectorAll('.edit-todo-input').forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleSaveTodo(e); // Trigger save on Enter
+                    }
+                });
+                 input.addEventListener('blur', (e) => {
+                    // Save on blur if the save button is visible (meaning edit mode is active)
+                    const item = e.target.closest('.todo-item');
+                    // Check if item and saveBtn exist before accessing classList
+                    if (item) {
+                        const saveBtn = item.querySelector('.save-todo-btn');
+                        if (saveBtn && !saveBtn.classList.contains('hidden')) {
+                            handleSaveTodo(e);
+                        }
+                    }
+                 });
+            });
+        }
+
+        function addTodo() {
+            const text = newTodoInput.value.trim();
+            if (text === '') return;
+
+            const newTodo = {
+                id: Date.now().toString(),
+                text: text,
+                completed: false
+            };
+            todos.push(newTodo);
+            saveTodos();
+            renderTodos();
+            newTodoInput.value = ''; // Clear input
+        }
+
+        function toggleTodo(id) {
+            todos = todos.map(todo =>
+                todo.id === id ? { ...todo, completed: !todo.completed } : todo
+            );
+            saveTodos();
+            renderTodos(); // Re-render to apply style changes
+        }
+
+        function editTodo(id, newText) {
+             const text = newText.trim();
+             if (text === '') {
+                 // If text is empty after edit, consider deleting or reverting
+                 alert("待辦事項內容不能為空！");
+                 renderTodos(); // Re-render to revert changes visually
+                 return;
+             };
+             todos = todos.map(todo =>
+                todo.id === id ? { ...todo, text: text } : todo
+             );
+             saveTodos();
+             renderTodos(); // Re-render to show updated text and hide input
+        }
+
+        function deleteTodo(id) {
+            todos = todos.filter(todo => todo.id !== id);
+            saveTodos();
+            renderTodos();
+        }
+
+        function handleToggleTodo(event) {
+            const id = event.target.closest('.todo-item').dataset.id;
+            toggleTodo(id);
+        }
+
+         function handleEditTodo(event) {
+            const item = event.target.closest('.todo-item');
+            // If already in edit mode, do nothing (or maybe revert?)
+            if (!item.querySelector('.save-todo-btn').classList.contains('hidden')) {
+                return;
+            }
+
+            // Revert any other items that might be in edit mode
+            document.querySelectorAll('.todo-item').forEach(otherItem => {
+                const otherSaveBtn = otherItem.querySelector('.save-todo-btn');
+                if (!otherSaveBtn.classList.contains('hidden')) {
+                    // Revert visual state without saving
+                    otherItem.querySelector('span').classList.remove('hidden');
+                    otherItem.querySelector('.edit-todo-input').classList.add('hidden');
+                    otherItem.querySelector('.edit-todo-btn').classList.remove('hidden');
+                    otherSaveBtn.classList.add('hidden');
+                    otherItem.querySelector('.delete-todo-btn').classList.remove('hidden');
+                }
+            });
+
+
+            const span = item.querySelector('span');
+            const input = item.querySelector('.edit-todo-input');
+            const editBtn = item.querySelector('.edit-todo-btn');
+            const saveBtn = item.querySelector('.save-todo-btn');
+            const deleteBtn = item.querySelector('.delete-todo-btn');
+
+            span.classList.add('hidden');
+            input.classList.remove('hidden');
+            input.value = span.textContent; // Ensure input has current text
+            input.focus(); // Focus the input field
+            input.select(); // Select text for easy replacement
+
+            editBtn.classList.add('hidden');
+            saveBtn.classList.remove('hidden');
+            deleteBtn.classList.add('hidden'); // Hide delete while editing
+         }
+
+         function handleSaveTodo(event) {
+             const item = event.target.closest('.todo-item');
+             const id = item.dataset.id;
+             const input = item.querySelector('.edit-todo-input');
+             editTodo(id, input.value);
+             // renderTodos() will be called inside editTodo, hiding the input etc.
+         }
+
+
+        function handleDeleteTodo(event) {
+             const id = event.target.closest('.todo-item').dataset.id;
+             if (confirm('確定要刪除這個待辦事項嗎？')) {
+                deleteTodo(id);
+             }
+        }
+
+        // --- Modal Logic ---
+        function openRecordModal(id = null, start, end, durationMs, content = '', notes = '') {
+             // Validate inputs
+             if (!start || !end || isNaN(start) || isNaN(end) || typeof durationMs !== 'number') {
+                console.error("Invalid data passed to openRecordModal:", { id, start, end, durationMs, content, notes });
+                alert("開啟紀錄視窗時發生錯誤：時間資料不正確。");
+                return;
+            }
+
+            recordIdInput.value = id || ''; // Set ID for editing, empty for new
+            startTimeInput.value = formatDateTime(start);
+            endTimeInput.value = formatDateTime(end);
+            durationInput.value = formatDurationHours(durationMs);
+            workContentInput.value = content;
+            notesInput.value = notes;
+
+            // Store raw values needed for saving, ensuring they are valid
+            recordModal.dataset.startTime = start.toISOString();
+            recordModal.dataset.endTime = end.toISOString();
+            recordModal.dataset.duration = durationMs.toString(); // Store as string
+
+            recordModal.style.display = 'block';
+            workContentInput.focus(); // Focus on content input when modal opens
+        }
+
+        function closeRecordModal() {
+            recordModal.style.display = 'none';
+            // Clear potentially sensitive data from dataset when closing
+            delete recordModal.dataset.startTime;
+            delete recordModal.dataset.endTime;
+            delete recordModal.dataset.duration;
+            recordIdInput.value = '';
+            startTimeInput.value = '';
+            endTimeInput.value = '';
+            durationInput.value = '';
+            workContentInput.value = '';
+            notesInput.value = '';
+            modalLoading.style.display = 'none'; // Hide loading overlay if it was shown
+            modalLoading.innerHTML = '<div class="spinner"></div> 儲存中...'; // Reset loading text
+        }
+
+        function handleSaveRecord() {
+            modalLoading.style.display = 'flex'; // Show loading indicator
+
+            const id = recordIdInput.value;
+            const content = workContentInput.value.trim();
+            const notes = notesInput.value.trim();
+
+            // Basic validation
+            if (!content) {
+                alert("請輸入工作內容！");
+                modalLoading.style.display = 'none';
+                workContentInput.focus();
+                return;
+            }
+
+            // Use Promise to better handle async simulation
+            new Promise(resolve => setTimeout(resolve, 300)) // Shorter delay
+                .then(() => {
+                    if (id) { // Editing existing record
+                        updateRecord(id, { content, notes });
+                    } else { // Adding new record
+                        // Retrieve and validate data stored in dataset
+                        const startTimeStr = recordModal.dataset.startTime;
+                        const endTimeStr = recordModal.dataset.endTime;
+                        const durationStr = recordModal.dataset.duration;
+
+                        if (!startTimeStr || !endTimeStr || !durationStr) {
+                             console.error("Missing data in modal dataset for new record.");
+                             alert("儲存新紀錄時發生錯誤：缺少時間資料。");
+                             throw new Error("Missing data in modal dataset"); // Stop execution
+                        }
+
+                        const recordData = {
+                            startTime: new Date(startTimeStr),
+                            endTime: new Date(endTimeStr),
+                            duration: parseInt(durationStr, 10),
+                            content: content,
+                            notes: notes
+                        };
+
+                         // Final validation before adding
+                         if (isNaN(recordData.startTime) || isNaN(recordData.endTime) || isNaN(recordData.duration)) {
+                            console.error("Invalid data parsed from modal dataset:", recordData);
+                            alert("儲存新紀錄時發生錯誤：時間資料格式錯誤。");
+                            throw new Error("Invalid data parsed from modal dataset"); // Stop execution
+                         }
+
+                        addRecord(recordData);
+                    }
+                    closeRecordModal();
+                })
+                .catch(error => {
+                    console.error("Error during save process:", error);
+                    // Keep modal open and hide loading indicator on error
+                    modalLoading.style.display = 'none';
+                });
+        }
+
+        // --- Google Sheet Export Logic ---
+        /**
+         * Sends all work records to the specified Google Apps Script URL.
+         * Assumes the Apps Script endpoint is configured to accept a POST request
+         * with a JSON body containing an array of record objects.
+         */
+        async function exportAllToGoogleSheet() {
+            if (workRecords.length === 0) {
+                alert('沒有紀錄可以匯出。');
+                return;
+            }
+            if (!googleScriptURL || googleScriptURL.includes("YOUR_SCRIPT_URL_HERE")) {
+                 alert('請先在 JavaScript 中設定有效的 Google Apps Script URL！');
+                 return;
+            }
+
+
+            // --- UI Feedback: Start Exporting ---
+            const originalButtonText = exportBtn.innerHTML;
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = `
+                <div class="spinner !w-5 !h-5 !border-2 !mr-2"></div>
+                匯出中 (${workRecords.length} 筆)...`;
+
+            // --- Prepare Data ---
+            // Format data to match the structure expected by the script (based on user's original function)
+            const dataToSend = workRecords.map(record => {
+                 // Ensure dates are valid before formatting
+                const start = record.startTime ? new Date(record.startTime) : null;
+                const end = record.endTime ? new Date(record.endTime) : null;
+                const hours = formatDurationHours(record.duration); // Calculate hours
+
+                return {
+                    startTime: formatDateTime(start), // Format date/time string
+                    endTime: formatDateTime(end),     // Format date/time string
+                    task: record.content || '',      // Rename content to task
+                    hours: hours,                    // Include calculated hours
+                    note: record.notes || ''         // Rename notes to note
+                };
+            }).filter(record => record.startTime && record.endTime); // Filter out records with invalid dates just in case
+
+             if (dataToSend.length === 0) {
+                alert('沒有有效的紀錄可以匯出。');
+                 exportBtn.disabled = false;
+                 exportBtn.innerHTML = originalButtonText;
+                return;
+            }
+
+
+            // --- Send Data ---
+            try {
+                const response = await fetch(googleScriptURL, {
+                    method: "POST",
+                    // Important: Sending data as JSON string. Ensure your Apps Script's doPost(e)
+                    // function parses e.postData.contents correctly.
+                    // A common Apps Script pattern: JSON.parse(e.postData.contents)
+                    // Also, make sure the script handles an ARRAY of records.
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ records: dataToSend }), // Send as an object containing the records array
+                    mode: 'cors' // Needed if your script requires it, though Apps Script often handles this
+                });
+
+                // Check if the response is ok (status code 200-299)
+                if (!response.ok) {
+                    // Try to get error details from the response body if possible
+                    let errorText = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorResult = await response.json(); // Assuming script returns JSON error
+                        errorText += ` - ${errorResult.message || JSON.stringify(errorResult)}`;
+                    } catch (e) {
+                        // If response is not JSON or parsing fails
+                        errorText += ` - ${response.statusText}`;
+                    }
+                     throw new Error(errorText);
+                }
+
+                const result = await response.json(); // Assuming script returns JSON success message
+
+                // --- UI Feedback: Success ---
+                alert(`成功匯出 ${dataToSend.length} 筆紀錄！\n伺服器回應：${result.message || JSON.stringify(result)}`);
+                exportBtn.innerHTML = `
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                     </svg>
+                    匯出成功！`;
+
+            } catch (error) {
+                // --- UI Feedback: Error ---
+                console.error("Error exporting to Google Sheet:", error);
+                alert(`匯出失敗！\n錯誤訊息：${error.message}\n請檢查 Google Apps Script URL 是否正確，以及指令碼是否已正確部署並授權。`);
+                exportBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    匯出失敗`;
+            } finally {
+                 // --- UI Feedback: Reset Button after a delay ---
+                 setTimeout(() => {
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = originalButtonText;
+                 }, 3000); // Reset after 3 seconds
+            }
+        }
+
+
+        // --- Event Listeners ---
+        startPauseBtn.addEventListener('click', () => {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        });
+
+        endBtn.addEventListener('click', endTimer);
+
+        addTodoBtn.addEventListener('click', addTodo);
+        newTodoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        closeModalBtn.addEventListener('click', closeRecordModal);
+        saveRecordBtn.addEventListener('click', handleSaveRecord);
+        // Also allow saving modal with Enter key in content/notes fields
+        workContentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { // Enter without Shift
+                 e.preventDefault(); // Prevent newline in input
+                 handleSaveRecord();
+            }
+        });
+         notesInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { // Enter without Shift
+                 e.preventDefault(); // Prevent newline in textarea
+                 handleSaveRecord();
+            }
+        });
+
+        // Updated: Attach the new export function to the button
+        exportBtn.addEventListener('click', exportAllToGoogleSheet);
+
+        // Close modal if clicked outside of it
+        window.addEventListener('click', (event) => {
+          if (event.target == recordModal) {
+            closeRecordModal();
+          }
+        });
+
+        // --- Initial Load and Render ---
+        function initializeApp() {
+            // Load data from localStorage
+             try {
+                const storedRecords = localStorage.getItem('workRecords');
+                if (storedRecords) {
+                    workRecords = JSON.parse(storedRecords);
+                    // Basic validation of loaded records
+                    workRecords = workRecords.filter(r => r && r.id && r.startTime && r.endTime && typeof r.duration === 'number');
+                } else {
+                    workRecords = []; // Ensure it's an empty array if nothing is stored
+                }
+            } catch (e) {
+                console.error("Error parsing work records from localStorage:", e);
+                workRecords = []; // Reset to empty array on error
+                localStorage.removeItem('workRecords'); // Clear corrupted data
+            }
+
+            try {
+                const storedTodos = localStorage.getItem('todos');
+                if (storedTodos) {
+                    todos = JSON.parse(storedTodos);
+                     // Basic validation of loaded todos
+                    todos = todos.filter(t => t && t.id && typeof t.text === 'string' && typeof t.completed === 'boolean');
+                } else {
+                     todos = []; // Ensure it's an empty array if nothing is stored
+                }
+            } catch (e) {
+                 console.error("Error parsing todos from localStorage:", e);
+                 todos = []; // Reset to empty array on error
+                 localStorage.removeItem('todos'); // Clear corrupted data
+            }
+
+            // Initial render
+            renderRecords();
+            renderTodos();
+            updateTimerDisplay(); // Initialize timer display
+        }
+
+        // Run initialization when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+
+    </script>
+
+</body>
+</html>
