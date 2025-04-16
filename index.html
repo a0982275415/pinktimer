@@ -370,11 +370,11 @@
         const endBtn = document.getElementById('endBtn');
         const recordList = document.getElementById('recordList');
         const exportBtn = document.getElementById('exportBtn');
-        const clearAllRecordsBtn = document.getElementById('clearAllRecordsBtn'); // New button
+        const clearAllRecordsBtn = document.getElementById('clearAllRecordsBtn');
         const newTodoInput = document.getElementById('newTodoInput');
         const addTodoBtn = document.getElementById('addTodoBtn');
         const todoList = document.getElementById('todoList');
-        const clearAllTodosBtn = document.getElementById('clearAllTodosBtn'); // New button
+        const clearAllTodosBtn = document.getElementById('clearAllTodosBtn');
 
 
         // Modal elements
@@ -416,7 +416,7 @@
         }
 
         /**
-         * Formats Date object into a readable string (e.g., YYYY/MM/DD HH:MM)
+         * Formats Date object into a readable string including seconds (e.g., YYYY/MM/DD HH:MM:SS)
          * @param {Date} date - Date object
          * @returns {string} Formatted date string
          */
@@ -428,7 +428,8 @@
                 const day = String(date.getDate()).padStart(2, '0');
                 const hours = String(date.getHours()).padStart(2, '0');
                 const minutes = String(date.getMinutes()).padStart(2, '0');
-                return `${year}/${month}/${day} ${hours}:${minutes}`;
+                const seconds = String(date.getSeconds()).padStart(2, '0'); // Add seconds
+                return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`; // Include seconds in format
             } catch (e) {
                 console.error("Error formatting date:", date, e);
                 return ''; // Return empty string on error
@@ -557,12 +558,11 @@
         function renderRecords() {
             recordList.innerHTML = '';
             if (workRecords.length === 0) {
-                // Updated placeholder text
                 recordList.innerHTML = '<p class="placeholder-text">還沒有工作紀錄喔！開始記錄吧～</p>';
-                 clearAllRecordsBtn.disabled = true; // Disable clear button when list is empty
+                 clearAllRecordsBtn.disabled = true;
                 return;
             }
-            clearAllRecordsBtn.disabled = false; // Enable clear button when list has items
+            clearAllRecordsBtn.disabled = false;
 
 
             const sortedRecords = [...workRecords].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
@@ -573,6 +573,7 @@
                 const recordStartTime = record.startTime ? new Date(record.startTime) : null;
                 const recordEndTime = record.endTime ? new Date(record.endTime) : null;
 
+                // Use the updated formatDateTime function here
                 card.innerHTML = `
                     <div class="flex-grow mr-4 min-w-0"> <p class="font-semibold text-pink-700 break-words">${record.content || '未命名工作'}</p>
                         <p class="text-sm text-gray-600">
@@ -648,13 +649,12 @@
             renderRecords();
         }
 
-         // New function to clear all records
-        function clearAllRecords() {
-            if (workRecords.length === 0) return; // Nothing to clear
+         function clearAllRecords() {
+            if (workRecords.length === 0) return;
             if (confirm('確定要清除所有工作紀錄嗎？此操作無法復原！')) {
-                workRecords = []; // Clear the array
-                saveRecords();    // Update localStorage
-                renderRecords();  // Update the UI
+                workRecords = [];
+                saveRecords();
+                renderRecords();
             }
         }
 
@@ -665,6 +665,7 @@
                  const startTime = recordToEdit.startTime ? new Date(recordToEdit.startTime) : null;
                  const endTime = recordToEdit.endTime ? new Date(recordToEdit.endTime) : null;
                  if (startTime && endTime && !isNaN(startTime) && !isNaN(endTime)) {
+                    // Use the updated formatDateTime function when opening modal
                     openRecordModal(recordToEdit.id, startTime, endTime, recordToEdit.duration, recordToEdit.content, recordToEdit.notes);
                  } else {
                     console.error("Invalid date found in record:", recordToEdit);
@@ -694,12 +695,11 @@
         function renderTodos() {
             todoList.innerHTML = '';
              if (todos.length === 0) {
-                 // Updated placeholder text
                 todoList.innerHTML = '<p class="placeholder-text">還沒有待辦事項喔！新增一些吧～</p>';
-                clearAllTodosBtn.disabled = true; // Disable clear button when list is empty
+                clearAllTodosBtn.disabled = true;
                 return;
             }
-            clearAllTodosBtn.disabled = false; // Enable clear button when list has items
+            clearAllTodosBtn.disabled = false;
 
 
             todos.forEach(todo => {
@@ -809,13 +809,12 @@
             renderTodos();
         }
 
-         // New function to clear all todos
-        function clearAllTodos() {
-            if (todos.length === 0) return; // Nothing to clear
+         function clearAllTodos() {
+            if (todos.length === 0) return;
             if (confirm('確定要清除所有待辦事項嗎？此操作無法復原！')) {
-                todos = []; // Clear the array
-                saveTodos();    // Update localStorage
-                renderTodos();  // Update the UI
+                todos = [];
+                saveTodos();
+                renderTodos();
             }
         }
 
@@ -884,6 +883,7 @@
             }
 
             recordIdInput.value = id || '';
+            // Use the updated formatDateTime function here for modal inputs
             startTimeInput.value = formatDateTime(start);
             endTimeInput.value = formatDateTime(end);
             durationInput.value = formatDurationHours(durationMs);
@@ -999,6 +999,7 @@
                     const sortedRecords = [...workRecords].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
                     sortedRecords.forEach(record => {
+                        // Use the updated formatDateTime function for CSV export as well
                         const startTimeStr = formatDateTime(new Date(record.startTime));
                         const endTimeStr = formatDateTime(new Date(record.endTime));
                         const durationStr = formatDurationHours(record.duration);
@@ -1085,7 +1086,6 @@
 
         exportBtn.addEventListener('click', exportData);
 
-        // Add event listeners for new clear buttons
         clearAllRecordsBtn.addEventListener('click', clearAllRecords);
         clearAllTodosBtn.addEventListener('click', clearAllTodos);
 
@@ -1126,8 +1126,8 @@
                  localStorage.removeItem('todos');
             }
 
-            renderRecords(); // Initial render enables/disables clear buttons
-            renderTodos();   // Initial render enables/disables clear buttons
+            renderRecords();
+            renderTodos();
             updateTimerDisplay();
         }
 
