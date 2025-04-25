@@ -437,20 +437,19 @@
 
         // 初始化 Google API 客戶端
         function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                });
-                gapiInited = true;
-                console.log('GAPI 初始化完成');
-            } catch (err) {
-                console.error('GAPI 初始化失敗:', err);
-            }
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({
+                        apiKey: API_KEY,
+                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                    });
+                    gapiInited = true;
+                    console.log('GAPI 初始化完成');
+                    maybeEnableButtons();
+                } catch (err) {
+                    console.error('GAPI 初始化失敗:', err);
+                }
+            });
         }
 
         // 初始化 Google Identity Services
@@ -459,10 +458,20 @@
                 client_id: CLIENT_ID,
                 scope: 'https://www.googleapis.com/auth/spreadsheets',
                 callback: '', // 將在需要時設定
-                prompt: '' // 不要每次都顯示提示
+                error_callback: (err) => {
+                    console.error('GIS 錯誤:', err);
+                }
             });
             gisInited = true;
             console.log('GIS 初始化完成');
+            maybeEnableButtons();
+        }
+
+        // 檢查並啟用按鈕
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                exportBtn.disabled = false;
+            }
         }
 
         // 初始化 Google Sheets API
@@ -470,7 +479,6 @@
             try {
                 console.log('開始初始化 Google Sheets API...');
                 
-                // 等待兩個客戶端都初始化完成
                 if (!gapiInited || !gisInited) {
                     throw new Error('請等待 Google API 初始化完成');
                 }
@@ -480,7 +488,6 @@
                 const tokenExpiry = localStorage.getItem('gapi_token_expiry');
                 
                 if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
-                    // 如果有有效的令牌，直接使用
                     gapi.client.setToken({ access_token: token });
                     return true;
                 }
@@ -495,7 +502,6 @@
                             // 儲存訪問令牌和過期時間
                             if (resp.access_token) {
                                 localStorage.setItem('gapi_access_token', resp.access_token);
-                                // 設定令牌過期時間（1小時）
                                 const expiry = new Date();
                                 expiry.setHours(expiry.getHours() + 1);
                                 localStorage.setItem('gapi_token_expiry', expiry.toISOString());
@@ -503,17 +509,17 @@
                             console.log('已成功取得存取權杖');
                             resolve(true);
                         };
-                        
+
                         if (gapi.client.getToken() === null) {
-                            // 如果沒有令牌，請求新的
-                            tokenClient.requestAccessToken({ prompt: 'consent' });
+                            tokenClient.requestAccessToken({
+                                prompt: 'consent',
+                                hint: localStorage.getItem('user_email')
+                            });
                         } else {
-                            // 有令牌但可能過期，嘗試刷新
                             tokenClient.requestAccessToken({ prompt: '' });
                         }
                     } catch (err) {
                         console.error('授權過程發生錯誤:', err);
-                        // 清除可能無效的令牌
                         localStorage.removeItem('gapi_access_token');
                         localStorage.removeItem('gapi_token_expiry');
                         reject(err);
