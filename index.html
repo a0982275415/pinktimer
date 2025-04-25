@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工時記錄器</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
@@ -78,6 +80,20 @@
             color: #B91C1C; /* Darker red text */
             transform: translateY(-1px);
             box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1), 0 2px 4px -2px rgba(220, 38, 38, 0.06);
+        }
+        /* 新增按鈕樣式 (淺藍色) */
+        .btn-light-blue {
+            background-color: #F0F9FF; /* Very light blue */
+            color: #0369A1; /* Blue text */
+            border: 1px solid #BAE6FD; /* Light blue border */
+            padding: 0.3rem 0.6rem; /* Match danger button padding */
+            font-size: 0.875rem; /* Match danger button font size */
+        }
+        .btn-light-blue:hover:not(:disabled) {
+            background-color: #E0F2FE; /* Slightly darker light blue */
+            color: #0284C7; /* Darker blue text */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.1), 0 2px 4px -2px rgba(14, 165, 233, 0.06);
         }
         /* 圖示按鈕樣式 */
         .icon-btn {
@@ -272,12 +288,20 @@
                 <section class="p-6 bg-white rounded-xl shadow-md border border-pink-100">
                     <div class="section-title-container">
                         <h2 class="section-title">📑 工作紀錄清單</h2>
-                        <button id="clearAllRecordsBtn" class="btn btn-danger" title="清除所有工作紀錄">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            全部清除
-                        </button>
+                        <div class="space-x-2">
+                            <button id="addNewRecordBtn" class="btn btn-light-blue" title="新增工作紀錄">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                新增
+                            </button>
+                            <button id="clearAllRecordsBtn" class="btn btn-danger" title="清除所有工作紀錄">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                清除
+                            </button>
+                        </div>
                     </div>
                     <div id="recordList" class="space-y-3 max-h-80 overflow-y-auto pr-2">
                         <p class="placeholder-text">還沒有工作紀錄喔！開始記錄吧～</p>
@@ -300,7 +324,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            全部清除
+                            清除
                         </button>
                     </div>
                     <div class="flex mb-4">
@@ -329,18 +353,18 @@
     <div id="recordModal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="closeModalBtn">&times;</span>
-        <h3 class="text-xl font-bold mb-4 text-pink-600">記錄本次工作</h3>
+        <h3 class="text-xl font-bold mb-4 text-pink-600">記錄工作</h3>
         <div class="space-y-3">
             <input type="hidden" id="recordId">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
-                <input type="text" id="startTime" class="bg-gray-100" readonly>
+                <input type="datetime-local" id="startTime" class="w-full rounded-lg border-pink-200 focus:border-pink-500 focus:ring focus:ring-pink-200">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
-                <input type="text" id="endTime" class="bg-gray-100" readonly>
+                <input type="datetime-local" id="endTime" class="w-full rounded-lg border-pink-200 focus:border-pink-500 focus:ring focus:ring-pink-200">
             </div>
-             <div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">工作時數 (小時)</label>
                 <input type="text" id="duration" class="bg-gray-100" readonly>
             </div>
@@ -400,6 +424,262 @@
         // --- Data Storage ---
         let workRecords = []; // Initialized in initializeApp
         let todos = [];       // Initialized in initializeApp
+
+        // --- Google Sheets Integration ---
+        const SPREADSHEET_ID = '1hGiFEh-WLTE05YReUgBghXRRlb8lO7z1HUJkDs5SFNU';
+        const SHEET_NAME = '工時紀錄';
+        const API_KEY = 'AIzaSyCGHl1DYaSxd5CVQ00zjJ6Gc8uoepOXIoM';
+        const CLIENT_ID = '546512436191-n58cui9bj25js8m5p01ol5tfoi2d4gh9.apps.googleusercontent.com';
+        
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        // 初始化 Google API 客戶端
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInited = true;
+                console.log('GAPI 初始化完成');
+            } catch (err) {
+                console.error('GAPI 初始化失敗:', err);
+            }
+        }
+
+        // 初始化 Google Identity Services
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/spreadsheets',
+                callback: '', // 將在需要時設定
+                prompt: '' // 不要每次都顯示提示
+            });
+            gisInited = true;
+            console.log('GIS 初始化完成');
+        }
+
+        // 初始化 Google Sheets API
+        async function initGoogleSheetsAPI() {
+            try {
+                console.log('開始初始化 Google Sheets API...');
+                
+                // 等待兩個客戶端都初始化完成
+                if (!gapiInited || !gisInited) {
+                    throw new Error('請等待 Google API 初始化完成');
+                }
+
+                // 檢查是否有存儲的訪問令牌
+                const token = localStorage.getItem('gapi_access_token');
+                const tokenExpiry = localStorage.getItem('gapi_token_expiry');
+                
+                if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
+                    // 如果有有效的令牌，直接使用
+                    gapi.client.setToken({ access_token: token });
+                    return true;
+                }
+
+                return new Promise((resolve, reject) => {
+                    try {
+                        tokenClient.callback = async (resp) => {
+                            if (resp.error !== undefined) {
+                                reject(resp);
+                                return;
+                            }
+                            // 儲存訪問令牌和過期時間
+                            if (resp.access_token) {
+                                localStorage.setItem('gapi_access_token', resp.access_token);
+                                // 設定令牌過期時間（1小時）
+                                const expiry = new Date();
+                                expiry.setHours(expiry.getHours() + 1);
+                                localStorage.setItem('gapi_token_expiry', expiry.toISOString());
+                            }
+                            console.log('已成功取得存取權杖');
+                            resolve(true);
+                        };
+                        
+                        if (gapi.client.getToken() === null) {
+                            // 如果沒有令牌，請求新的
+                            tokenClient.requestAccessToken({ prompt: 'consent' });
+                        } else {
+                            // 有令牌但可能過期，嘗試刷新
+                            tokenClient.requestAccessToken({ prompt: '' });
+                        }
+                    } catch (err) {
+                        console.error('授權過程發生錯誤:', err);
+                        // 清除可能無效的令牌
+                        localStorage.removeItem('gapi_access_token');
+                        localStorage.removeItem('gapi_token_expiry');
+                        reject(err);
+                    }
+                });
+            } catch (error) {
+                console.error('Google Sheets API 初始化錯誤:', error);
+                throw new Error(error.message || '初始化過程發生錯誤');
+            }
+        }
+
+        // 登出 Google 帳號
+        async function signOut() {
+            try {
+                const token = gapi.client.getToken();
+                if (token !== null) {
+                    google.accounts.oauth2.revoke(token.access_token);
+                    gapi.client.setToken('');
+                    localStorage.removeItem('gapi_access_token');
+                    localStorage.removeItem('gapi_token_expiry');
+                }
+            } catch (error) {
+                console.error('登出時發生錯誤:', error);
+            }
+        }
+
+        // 在視窗關閉前嘗試保存授權狀態
+        window.addEventListener('beforeunload', () => {
+            const token = gapi.client.getToken();
+            if (token) {
+                localStorage.setItem('gapi_access_token', token.access_token);
+                const expiry = new Date();
+                expiry.setHours(expiry.getHours() + 1);
+                localStorage.setItem('gapi_token_expiry', expiry.toISOString());
+            }
+        });
+
+        // 將資料寫入 Google Sheets
+        async function writeToGoogleSheets(records) {
+            try {
+                console.log('開始寫入資料到試算表...');
+                
+                // 先取得現有資料的最後一行
+                console.log('檢查現有資料...');
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!A:E`
+                });
+
+                let startRow = 1;
+                if (response.result.values && response.result.values.length > 0) {
+                    startRow = response.result.values.length + 1;
+                }
+
+                // 準備新資料
+                const values = records.map(record => [
+                    formatDateTime(new Date(record.startTime)),
+                    formatDateTime(new Date(record.endTime)),
+                    record.content,
+                    formatDurationHours(record.duration),
+                    record.notes || ''
+                ]);
+
+                // 如果是空白試算表，先加入標題列
+                if (startRow === 1) {
+                    values.unshift(['開始時間', '結束時間', '工作內容', '時數(hr)', '備註']);
+                }
+
+                // 寫入新資料
+                console.log('寫入新資料...');
+                const updateResponse = await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!A${startRow}:E${startRow + values.length - 1}`,
+                    valueInputOption: 'USER_ENTERED',
+                    resource: { values }
+                });
+
+                console.log('資料寫入完成:', updateResponse);
+                return true;
+            } catch (error) {
+                console.error('寫入試算表時發生錯誤:', error);
+                throw new Error(error.message || '寫入資料時發生錯誤');
+            }
+        }
+
+        // 修改匯出功能
+        async function exportData() {
+            if (workRecords.length === 0) {
+                alert('沒有紀錄可以匯出。');
+                return;
+            }
+
+            const originalButtonText = exportBtn.innerHTML;
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = `
+                <div class="spinner !w-5 !h-5 !border-2 !mr-2"></div>
+                匯出中...`;
+
+            try {
+                await initGoogleSheetsAPI();
+                await writeToGoogleSheets(workRecords);
+
+                // 建立一個簡單的橫向通知
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-white px-4 py-2 rounded-lg shadow-lg border border-green-200 animate-fade-in z-50 flex items-center space-x-3';
+                notification.innerHTML = `
+                    <span class="text-green-600 font-medium">匯出成功</span>
+                    <a href="https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}" 
+                       target="_blank"
+                       class="text-blue-600 hover:text-blue-500 font-medium flex items-center">
+                        <svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        開啟試算表
+                    </a>
+                `;
+
+                // 添加淡入動畫樣式
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes fade-in {
+                        from { opacity: 0; transform: translateY(1rem); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-fade-in {
+                        animation: fade-in 0.3s ease-out forwards;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                // 添加通知到頁面
+                document.body.appendChild(notification);
+
+                // 3秒後自動移除通知
+                setTimeout(() => {
+                    notification.style.animation = 'fade-in 0.3s ease-out reverse forwards';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+
+                // 更新匯出按鈕狀態
+                exportBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    匯出成功！`;
+
+            } catch (error) {
+                console.error('匯出錯誤:', error);
+                if (error.status === 401 || error.status === 403) {
+                    localStorage.removeItem('gapi_access_token');
+                    localStorage.removeItem('gapi_token_expiry');
+                }
+                alert(`匯出失敗！\n${error.message}`);
+                exportBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    匯出失敗`;
+            } finally {
+                setTimeout(() => {
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = originalButtonText;
+                }, 3000);
+            }
+        }
 
         // --- Helper Functions ---
         /**
@@ -883,9 +1163,16 @@
             }
 
             recordIdInput.value = id || '';
-            // Use the updated formatDateTime function here for modal inputs
-            startTimeInput.value = formatDateTime(start);
-            endTimeInput.value = formatDateTime(end);
+            
+            // 格式化日期時間為 HTML datetime-local 輸入格式
+            const formatDateTimeLocal = (date) => {
+                return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16);
+            };
+            
+            startTimeInput.value = formatDateTimeLocal(start);
+            endTimeInput.value = formatDateTimeLocal(end);
             durationInput.value = formatDurationHours(durationMs);
             workContentInput.value = content;
             notesInput.value = notes;
@@ -919,6 +1206,9 @@
             const id = recordIdInput.value;
             const content = workContentInput.value.trim();
             const notes = notesInput.value.trim();
+            const startTime = new Date(startTimeInput.value);
+            const endTime = new Date(endTimeInput.value);
+            const duration = parseInt(recordModal.dataset.duration, 10);
 
             if (!content) {
                 alert("請輸入工作內容！");
@@ -927,35 +1217,36 @@
                 return;
             }
 
+            if (isNaN(startTime) || isNaN(endTime)) {
+                alert("請輸入有效的開始和結束時間！");
+                modalLoading.style.display = 'none';
+                return;
+            }
+
+            if (endTime < startTime) {
+                alert("結束時間必須晚於開始時間！");
+                modalLoading.style.display = 'none';
+                return;
+            }
+
             new Promise(resolve => setTimeout(resolve, 300))
                 .then(() => {
                     if (id) {
-                        updateRecord(id, { content, notes });
+                        updateRecord(id, {
+                            content,
+                            notes,
+                            startTime,
+                            endTime,
+                            duration: endTime - startTime
+                        });
                     } else {
-                        const startTimeStr = recordModal.dataset.startTime;
-                        const endTimeStr = recordModal.dataset.endTime;
-                        const durationStr = recordModal.dataset.duration;
-
-                        if (!startTimeStr || !endTimeStr || !durationStr) {
-                             console.error("Missing data in modal dataset for new record.");
-                             alert("儲存新紀錄時發生錯誤：缺少時間資料。");
-                             throw new Error("Missing data in modal dataset");
-                        }
-
                         const recordData = {
-                            startTime: new Date(startTimeStr),
-                            endTime: new Date(endTimeStr),
-                            duration: parseInt(durationStr, 10),
-                            content: content,
-                            notes: notes
+                            startTime,
+                            endTime,
+                            duration: endTime - startTime,
+                            content,
+                            notes
                         };
-
-                         if (isNaN(recordData.startTime) || isNaN(recordData.endTime) || isNaN(recordData.duration)) {
-                            console.error("Invalid data parsed from modal dataset:", recordData);
-                            alert("儲存新紀錄時發生錯誤：時間資料格式錯誤。");
-                            throw new Error("Invalid data parsed from modal dataset");
-                         }
-
                         addRecord(recordData);
                     }
                     closeRecordModal();
@@ -965,91 +1256,6 @@
                     modalLoading.style.display = 'none';
                 });
         }
-
-        // --- CSV Export Logic ---
-        /**
-         * Exports all work records to a downloadable CSV file.
-         */
-        function exportData() {
-            if (workRecords.length === 0) {
-                alert('沒有紀錄可以匯出。');
-                return;
-            }
-
-            const originalButtonText = exportBtn.innerHTML;
-            exportBtn.disabled = true;
-            exportBtn.innerHTML = `
-                <div class="spinner !w-5 !h-5 !border-2 !mr-2"></div>
-                產生檔案中...`;
-
-            setTimeout(() => {
-                try {
-                    const formatCsvField = (field) => {
-                        const stringField = String(field || '');
-                        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
-                            return `"${stringField.replace(/"/g, '""')}"`;
-                        }
-                        return stringField;
-                    };
-
-                    const headers = ["開始時間", "結束時間", "工作內容", "時數(hr)", "備註"];
-                    let csvContent = "\uFEFF";
-                    csvContent += headers.map(formatCsvField).join(',') + '\n';
-
-                    const sortedRecords = [...workRecords].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-
-                    sortedRecords.forEach(record => {
-                        // Use the updated formatDateTime function for CSV export as well
-                        const startTimeStr = formatDateTime(new Date(record.startTime));
-                        const endTimeStr = formatDateTime(new Date(record.endTime));
-                        const durationStr = formatDurationHours(record.duration);
-                        const contentStr = record.content;
-                        const notesStr = record.notes;
-
-                        const row = [
-                            startTimeStr,
-                            endTimeStr,
-                            contentStr,
-                            durationStr,
-                            notesStr
-                        ];
-                        csvContent += row.map(formatCsvField).join(',') + '\n';
-                    });
-
-                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement("a");
-                    const url = URL.createObjectURL(blob);
-                    link.setAttribute("href", url);
-                    link.setAttribute("download", "工時紀錄.csv");
-                    link.style.visibility = 'hidden';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-
-                    exportBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        匯出成功！`;
-
-                } catch (error) {
-                    console.error("Error exporting CSV:", error);
-                    alert(`匯出 CSV 失敗！\n錯誤訊息：${error.message}`);
-                     exportBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        匯出失敗`;
-                } finally {
-                     setTimeout(() => {
-                        exportBtn.disabled = false;
-                        exportBtn.innerHTML = originalButtonText;
-                     }, 3000);
-                }
-            }, 50);
-        }
-
 
         // --- Event Listeners ---
         startPauseBtn.addEventListener('click', () => {
@@ -1089,6 +1295,32 @@
         clearAllRecordsBtn.addEventListener('click', clearAllRecords);
         clearAllTodosBtn.addEventListener('click', clearAllTodos);
 
+        // 新增按鈕事件監聽
+        document.getElementById('addNewRecordBtn').addEventListener('click', () => {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            openRecordModal(null, oneHourAgo, now, 3600000);
+        });
+
+        // 修改開始和結束時間的事件監聽，用於自動計算時數
+        document.getElementById('startTime').addEventListener('change', updateDuration);
+        document.getElementById('endTime').addEventListener('change', updateDuration);
+
+        function updateDuration() {
+            const startTime = new Date(document.getElementById('startTime').value);
+            const endTime = new Date(document.getElementById('endTime').value);
+            
+            if (!isNaN(startTime) && !isNaN(endTime)) {
+                const durationMs = endTime - startTime;
+                if (durationMs >= 0) {
+                    document.getElementById('duration').value = formatDurationHours(durationMs);
+                    recordModal.dataset.duration = durationMs.toString();
+                } else {
+                    alert('結束時間必須晚於開始時間！');
+                    document.getElementById('duration').value = '0.00';
+                }
+            }
+        }
 
         window.addEventListener('click', (event) => {
           if (event.target == recordModal) {
@@ -1131,7 +1363,12 @@
             updateTimerDisplay();
         }
 
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        document.addEventListener('DOMContentLoaded', function() {
+            // 載入 Google API
+            gapiLoaded();
+            gisLoaded();
+            // ... 其他初始化程式碼 ...
+        });
 
     </script>
 
