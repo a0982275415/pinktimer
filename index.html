@@ -367,6 +367,11 @@
                 <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">備註</label>
                 <textarea id="notes" rows="3" placeholder="選填"></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">分段時間</label>
+                <div id="segmentsEditArea" class="space-y-2"></div>
+                <button type="button" id="addSegmentBtn" class="btn btn-light-blue mt-2">新增分段</button>
+            </div>
             <div class="text-right pt-3">
                 <button id="saveRecordBtn" class="btn btn-primary">儲存紀錄</button>
             </div>
@@ -1116,6 +1121,90 @@
         document.addEventListener('DOMContentLoaded', function() {
             // ... 其他初始化程式碼 ...
         });
+
+        // 在 Modal 內加入分段編輯區塊
+        const segmentsEditArea = document.getElementById('segmentsEditArea');
+        const addSegmentBtn = document.getElementById('addSegmentBtn');
+
+        function renderSegmentsEditArea(segments) {
+            segmentsEditArea.innerHTML = '';
+            segments.forEach((seg, idx) => {
+                const segDiv = document.createElement('div');
+                segDiv.className = 'flex items-center space-x-2';
+                segDiv.innerHTML = `
+                    <input type="datetime-local" class="segment-start border rounded px-2 py-1" value="${seg.start ? formatDateTimeLocalInput(seg.start) : ''}" data-idx="${idx}">
+                    <span>～</span>
+                    <input type="datetime-local" class="segment-end border rounded px-2 py-1" value="${seg.end ? formatDateTimeLocalInput(seg.end) : ''}" data-idx="${idx}">
+                    <button type="button" class="icon-btn text-red-500 remove-segment-btn" data-idx="${idx}" title="刪除分段">✕</button>
+                `;
+                segmentsEditArea.appendChild(segDiv);
+            });
+            // 綁定刪除事件
+            segmentsEditArea.querySelectorAll('.remove-segment-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.idx, 10);
+                    const segments = getSegmentsFromEditArea();
+                    segments.splice(idx, 1);
+                    renderSegmentsEditArea(segments);
+                    updateSegmentSummary();
+                });
+            });
+            // 綁定 input 事件
+            segmentsEditArea.querySelectorAll('.segment-start, .segment-end').forEach(input => {
+                input.addEventListener('change', () => {
+                    updateSegmentSummary();
+                });
+            });
+        }
+
+        function getSegmentsFromEditArea() {
+            const segs = [];
+            segmentsEditArea.querySelectorAll('.segment-start').forEach((startInput, idx) => {
+                const endInput = segmentsEditArea.querySelectorAll('.segment-end')[idx];
+                const startVal = startInput.value;
+                const endVal = endInput.value;
+                segs.push({
+                    start: startVal ? new Date(startVal) : null,
+                    end: endVal ? new Date(endVal) : null
+                });
+            });
+            return segs;
+        }
+
+        function updateSegmentSummary() {
+            // 依 segmentsEditArea 內容自動計算總時數、最早開始、最晚結束
+            const segs = getSegmentsFromEditArea();
+            let totalMs = 0;
+            let minStart = null;
+            let maxEnd = null;
+            segs.forEach(seg => {
+                if (seg.start && seg.end && !isNaN(seg.start) && !isNaN(seg.end) && seg.end > seg.start) {
+                    totalMs += seg.end - seg.start;
+                    if (!minStart || seg.start < minStart) minStart = seg.start;
+                    if (!maxEnd || seg.end > maxEnd) maxEnd = seg.end;
+                }
+            });
+            document.getElementById('duration').value = formatDurationHours(totalMs);
+            document.getElementById('startTime').value = minStart ? formatDateTimeLocalInput(minStart) : '';
+            document.getElementById('endTime').value = maxEnd ? formatDateTimeLocalInput(maxEnd) : '';
+            // 同步到 modal dataset
+            recordModal.dataset.duration = totalMs.toString();
+            recordModal.dataset.startTime = minStart ? new Date(minStart).toISOString() : '';
+            recordModal.dataset.endTime = maxEnd ? new Date(maxEnd).toISOString() : '';
+            recordModal.dataset.segments = JSON.stringify(segs);
+        }
+
+        addSegmentBtn.addEventListener('click', () => {
+            const segs = getSegmentsFromEditArea();
+            segs.push({ start: '', end: '' });
+            renderSegmentsEditArea(segs);
+        });
+
+        function formatDateTimeLocalInput(date) {
+            if (!date) return '';
+            const d = (typeof date === 'string') ? new Date(date) : date;
+            return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        }
 
     </script>
 
