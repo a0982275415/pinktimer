@@ -420,6 +420,7 @@
         let pausedTime = 0; // Total time paused in milliseconds
         let pauseStart = null; // Timestamp when pause started
         let isRunning = false;
+        let currentSegments = []; // 新增：記錄每一段有效工時
 
         // --- Data Storage ---
         let workRecords = []; // Initialized in initializeApp
@@ -428,7 +429,6 @@
         // --- Google Sheets Integration ---
         const SPREADSHEET_ID = '1hGiFEh-WLTE05YReUgBghXRRlb8lO7z1HUJkDs5SFNU';
         const SHEET_NAME = '工時紀錄';
-        const API_KEY = 'AIzaSyCGHl1DYaSxd5CVQ00zjJ6Gc8uoepOXIoM';
         const CLIENT_ID = '546512436191-n58cui9bj25js8m5p01ol5tfoi2d4gh9.apps.googleusercontent.com';
         
         let tokenClient;
@@ -558,7 +558,6 @@
             try {
                 console.log('Current token:', gapi.client.getToken());
                 console.log('開始寫入資料到試算表...');
-                
                 // 先取得現有資料的最後一行
                 console.log('檢查現有資料...');
                 const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -577,12 +576,19 @@
                     formatDateTime(new Date(record.endTime)),
                     record.content,
                     formatDurationHours(record.duration),
-                    record.notes || ''
+                    // 分段明細合併為字串
+                    (record.segments && record.segments.length > 0)
+                        ? record.segments.map(seg => {
+                            const segStart = seg.start ? formatDateTime(new Date(seg.start)) : '';
+                            const segEnd = seg.end ? formatDateTime(new Date(seg.end)) : '';
+                            return `${segStart}～${segEnd}`;
+                          }).join(' | ')
+                        : (record.notes || '')
                 ]);
 
                 // 如果是空白試算表，先加入標題列
                 if (startRow === 1) {
-                    values.unshift(['開始時間', '結束時間', '工作內容', '時數(hr)', '備註']);
+                    values.unshift(['開始時間', '結束時間', '工作內容', '時數(hr)', '備註/分段明細']);
                 }
 
                 // 寫入新資料
@@ -597,7 +603,8 @@
                 console.log('資料寫入完成:', updateResponse);
                 return true;
             } catch (error) {
-                console.error('寫入試算表時發生錯誤:', error);
+                console.error('寫入試算表時發生錯誤:', error, error.result);
+                alert('詳細錯誤：' + (error.result?.error?.message || error.message || '未知錯誤'));
                 throw new Error(error.message || '寫入資料時發生錯誤');
             }
         }
@@ -753,15 +760,17 @@
         // --- Timer Logic ---
         function startTimer() {
             if (isRunning) return;
-
+            const now = Date.now();
             if (startTime === null) {
-                startTime = Date.now();
+                startTime = now;
                 pausedTime = 0;
+                currentSegments = [{ start: new Date(now) }]; // 新增：開始第一段
             } else {
-                pausedTime += (pauseStart ? Date.now() - pauseStart : 0);
+                pausedTime += (pauseStart ? now - pauseStart : 0);
                 pauseStart = null;
+                // 新增：繼續時開始新一段
+                currentSegments.push({ start: new Date(now) });
             }
-
             isRunning = true;
             startPauseBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -770,7 +779,6 @@
                 暫停`;
             startPauseBtn.classList.replace('btn-primary', 'btn-secondary');
             endBtn.disabled = false;
-
             clearInterval(timerInterval);
             updateTimerDisplay();
             timerInterval = setInterval(updateTimerDisplay, 1000);
@@ -778,12 +786,14 @@
 
         function pauseTimer() {
             if (!isRunning) return;
-
             clearInterval(timerInterval);
             timerInterval = null;
             pauseStart = Date.now();
             isRunning = false;
-
+            // 新增：暫停時補上當前段的 end
+            if (currentSegments.length > 0 && !currentSegments[currentSegments.length - 1].end) {
+                currentSegments[currentSegments.length - 1].end = new Date(pauseStart);
+            }
             startPauseBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
@@ -795,37 +805,36 @@
 
         function endTimer() {
             if (startTime === null) return;
-
             const endTime = Date.now();
             let finalElapsedTime;
-
             if (isRunning) {
                 clearInterval(timerInterval);
                 finalElapsedTime = endTime - startTime - pausedTime;
             } else {
                 finalElapsedTime = pauseStart ? pauseStart - startTime - pausedTime : 0;
             }
-             finalElapsedTime = Math.max(0, finalElapsedTime);
-
+            finalElapsedTime = Math.max(0, finalElapsedTime);
             const startDate = new Date(startTime);
             const endDate = new Date(endTime);
-
             isRunning = false;
             startTime = null;
             pausedTime = 0;
             pauseStart = null;
             timerInterval = null;
-
             timerDisplay.textContent = '00:00:00';
             startPauseBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                 </svg>
                 開始`;
-             startPauseBtn.classList.replace('btn-secondary', 'btn-primary');
+            startPauseBtn.classList.replace('btn-secondary', 'btn-primary');
             endBtn.disabled = true;
-
-            openRecordModal(null, startDate, endDate, finalElapsedTime);
+            // 新增：結束時補上最後一段的 end
+            if (currentSegments.length > 0 && !currentSegments[currentSegments.length - 1].end) {
+                currentSegments[currentSegments.length - 1].end = new Date(endTime);
+            }
+            openRecordModal(null, startDate, endDate, finalElapsedTime, '', '', currentSegments);
+            currentSegments = [];
         }
 
         // --- Record Management ---
@@ -855,8 +864,16 @@
                 card.className = 'record-card flex justify-between items-start';
                 const recordStartTime = record.startTime ? new Date(record.startTime) : null;
                 const recordEndTime = record.endTime ? new Date(record.endTime) : null;
-
-                // Use the updated formatDateTime function here
+                // 分段明細
+                let segmentsHtml = '';
+                if (record.segments && record.segments.length > 0) {
+                    segmentsHtml = `<div class="text-xs text-gray-500 mt-1"><span class="font-medium">分段明細：</span><ul class="list-disc ml-5">` +
+                        record.segments.map(seg => {
+                            const segStart = seg.start ? formatDateTime(new Date(seg.start)) : '';
+                            const segEnd = seg.end ? formatDateTime(new Date(seg.end)) : '';
+                            return `<li>${segStart} ～ ${segEnd}</li>`;
+                        }).join('') + '</ul></div>';
+                }
                 card.innerHTML = `
                     <div class="flex-grow mr-4 min-w-0"> <p class="font-semibold text-pink-700 break-words">${record.content || '未命名工作'}</p>
                         <p class="text-sm text-gray-600">
@@ -866,6 +883,7 @@
                             <span class="font-medium">時數：</span>${formatDurationHours(record.duration)} 小時
                         </p>
                         ${record.notes ? `<p class="text-sm text-gray-500 mt-1 break-words"><span class="font-medium">備註：</span>${record.notes}</p>` : ''}
+                        ${segmentsHtml}
                     </div>
                     <div class="flex-shrink-0 space-x-2">
                         <button class="icon-btn edit-record-btn" data-id="${record.id}" title="編輯">
@@ -904,7 +922,8 @@
                 endTime: recordData.endTime.toISOString(),
                 duration: recordData.duration,
                 content: recordData.content || '',
-                notes: recordData.notes || ''
+                notes: recordData.notes || '',
+                segments: recordData.segments || [] // 新增：分段資料
             };
             workRecords.push(newRecord);
             saveRecords();
@@ -917,7 +936,8 @@
                     return {
                         ...record,
                         content: updatedData.content || '',
-                        notes: updatedData.notes || ''
+                        notes: updatedData.notes || '',
+                        segments: updatedData.segments || [] // 新增：分段資料
                     };
                 }
                 return record;
@@ -949,7 +969,7 @@
                  const endTime = recordToEdit.endTime ? new Date(recordToEdit.endTime) : null;
                  if (startTime && endTime && !isNaN(startTime) && !isNaN(endTime)) {
                     // Use the updated formatDateTime function when opening modal
-                    openRecordModal(recordToEdit.id, startTime, endTime, recordToEdit.duration, recordToEdit.content, recordToEdit.notes);
+                    openRecordModal(recordToEdit.id, startTime, endTime, recordToEdit.duration, recordToEdit.content, recordToEdit.notes, recordToEdit.segments);
                  } else {
                     console.error("Invalid date found in record:", recordToEdit);
                     alert("無法編輯此紀錄：紀錄中的時間格式錯誤。");
@@ -1158,7 +1178,7 @@
         }
 
         // --- Modal Logic ---
-        function openRecordModal(id = null, start, end, durationMs, content = '', notes = '') {
+        function openRecordModal(id = null, start, end, durationMs, content = '', notes = '', segments = []) {
              if (!start || !end || isNaN(start) || isNaN(end) || typeof durationMs !== 'number') {
                 console.error("Invalid data passed to openRecordModal:", { id, start, end, durationMs, content, notes });
                 alert("開啟紀錄視窗時發生錯誤：時間資料不正確。");
@@ -1183,6 +1203,7 @@
             recordModal.dataset.startTime = start.toISOString();
             recordModal.dataset.endTime = end.toISOString();
             recordModal.dataset.duration = durationMs.toString();
+            recordModal.dataset.segments = JSON.stringify(segments || []); // 新增：分段資料
 
             recordModal.style.display = 'block';
             workContentInput.focus();
@@ -1193,6 +1214,7 @@
             delete recordModal.dataset.startTime;
             delete recordModal.dataset.endTime;
             delete recordModal.dataset.duration;
+            delete recordModal.dataset.segments;
             recordIdInput.value = '';
             startTimeInput.value = '';
             endTimeInput.value = '';
@@ -1205,33 +1227,35 @@
 
         function handleSaveRecord() {
             modalLoading.style.display = 'flex';
-
             const id = recordIdInput.value;
             const content = workContentInput.value.trim();
             const notes = notesInput.value.trim();
             const startTime = new Date(startTimeInput.value);
             const endTime = new Date(endTimeInput.value);
             const duration = parseInt(recordModal.dataset.duration, 10);
-
+            const segments = (() => {
+                try {
+                    return JSON.parse(recordModal.dataset.segments || '[]');
+                } catch (e) {
+                    return [];
+                }
+            })();
             if (!content) {
                 alert("請輸入工作內容！");
                 modalLoading.style.display = 'none';
                 workContentInput.focus();
                 return;
             }
-
             if (isNaN(startTime) || isNaN(endTime)) {
                 alert("請輸入有效的開始和結束時間！");
                 modalLoading.style.display = 'none';
                 return;
             }
-
             if (endTime < startTime) {
                 alert("結束時間必須晚於開始時間！");
                 modalLoading.style.display = 'none';
                 return;
             }
-
             new Promise(resolve => setTimeout(resolve, 300))
                 .then(() => {
                     if (id) {
@@ -1240,7 +1264,8 @@
                             notes,
                             startTime,
                             endTime,
-                            duration: endTime - startTime
+                            duration: endTime - startTime,
+                            segments
                         });
                     } else {
                         const recordData = {
@@ -1248,7 +1273,8 @@
                             endTime,
                             duration: endTime - startTime,
                             content,
-                            notes
+                            notes,
+                            segments
                         };
                         addRecord(recordData);
                     }
