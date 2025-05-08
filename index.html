@@ -478,20 +478,16 @@
         async function initGoogleSheetsAPI() {
             try {
                 console.log('開始初始化 Google Sheets API...');
-                
                 if (!gapiInited || !gisInited) {
                     throw new Error('請等待 Google API 初始化完成');
                 }
-
                 // 檢查是否有存儲的訪問令牌
                 const token = localStorage.getItem('gapi_access_token');
                 const tokenExpiry = localStorage.getItem('gapi_token_expiry');
-                
                 if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
                     gapi.client.setToken({ access_token: token });
                     return true;
                 }
-
                 return new Promise((resolve, reject) => {
                     try {
                         tokenClient.callback = async (resp) => {
@@ -501,6 +497,7 @@
                             }
                             // 儲存訪問令牌和過期時間
                             if (resp.access_token) {
+                                gapi.client.setToken({ access_token: resp.access_token });
                                 localStorage.setItem('gapi_access_token', resp.access_token);
                                 const expiry = new Date();
                                 expiry.setHours(expiry.getHours() + 1);
@@ -509,7 +506,6 @@
                             console.log('已成功取得存取權杖');
                             resolve(true);
                         };
-
                         if (gapi.client.getToken() === null) {
                             tokenClient.requestAccessToken({
                                 prompt: 'consent',
@@ -560,6 +556,7 @@
         // 將資料寫入 Google Sheets
         async function writeToGoogleSheets(records) {
             try {
+                console.log('Current token:', gapi.client.getToken());
                 console.log('開始寫入資料到試算表...');
                 
                 // 先取得現有資料的最後一行
@@ -600,10 +597,9 @@
                 console.log('資料寫入完成:', updateResponse);
                 return true;
             } catch (error) {
-    console.error('寫入試算表時發生錯誤:', error, error.result);
-    alert('詳細錯誤：' + (error.result?.error?.message || error.message || '未知錯誤'));
-    throw new Error(error.message || '寫入資料時發生錯誤');
-}
+                console.error('寫入試算表時發生錯誤:', error);
+                throw new Error(error.message || '寫入資料時發生錯誤');
+            }
         }
 
         // 修改匯出功能
