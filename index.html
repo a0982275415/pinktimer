@@ -430,7 +430,7 @@
         const SHEET_NAME = '工時紀錄';
         const API_KEY = 'AIzaSyCGHl1DYaSxd5CVQ00zjJ6Gc8uoepOXIoM';
         const CLIENT_ID = '546512436191-n58cui9bj25js8m5p01ol5tfoi2d4gh9.apps.googleusercontent.com';
-
+        
         let tokenClient;
         let gapiInited = false;
         let gisInited = false;
@@ -451,19 +451,6 @@
             } catch (err) {
                 console.error('GAPI 初始化失敗:', err);
             }
-            gapi.load('client', async () => {
-                try {
-                    await gapi.client.init({
-                        apiKey: API_KEY,
-                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                    });
-                    gapiInited = true;
-                    console.log('GAPI 初始化完成');
-                    maybeEnableButtons();
-                } catch (err) {
-                    console.error('GAPI 初始化失敗:', err);
-                }
-            });
         }
 
         // 初始化 Google Identity Services
@@ -473,27 +460,16 @@
                 scope: 'https://www.googleapis.com/auth/spreadsheets',
                 callback: '', // 將在需要時設定
                 prompt: '' // 不要每次都顯示提示
-                error_callback: (err) => {
-                    console.error('GIS 錯誤:', err);
-                }
             });
             gisInited = true;
             console.log('GIS 初始化完成');
-            maybeEnableButtons();
-        }
-
-        // 檢查並啟用按鈕
-        function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                exportBtn.disabled = false;
-            }
         }
 
         // 初始化 Google Sheets API
         async function initGoogleSheetsAPI() {
             try {
                 console.log('開始初始化 Google Sheets API...');
-
+                
                 // 等待兩個客戶端都初始化完成
                 if (!gapiInited || !gisInited) {
                     throw new Error('請等待 Google API 初始化完成');
@@ -502,7 +478,7 @@
                 // 檢查是否有存儲的訪問令牌
                 const token = localStorage.getItem('gapi_access_token');
                 const tokenExpiry = localStorage.getItem('gapi_token_expiry');
-
+                
                 if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
                     // 如果有有效的令牌，直接使用
                     gapi.client.setToken({ access_token: token });
@@ -528,14 +504,9 @@
                             resolve(true);
                         };
                         
-
                         if (gapi.client.getToken() === null) {
                             // 如果沒有令牌，請求新的
                             tokenClient.requestAccessToken({ prompt: 'consent' });
-                            tokenClient.requestAccessToken({
-                                prompt: 'consent',
-                                hint: localStorage.getItem('user_email')
-                            });
                         } else {
                             // 有令牌但可能過期，嘗試刷新
                             tokenClient.requestAccessToken({ prompt: '' });
@@ -584,7 +555,7 @@
         async function writeToGoogleSheets(records) {
             try {
                 console.log('開始寫入資料到試算表...');
-
+                
                 // 先取得現有資料的最後一行
                 console.log('檢查現有資料...');
                 const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -1192,14 +1163,14 @@
             }
 
             recordIdInput.value = id || '';
-
+            
             // 格式化日期時間為 HTML datetime-local 輸入格式
             const formatDateTimeLocal = (date) => {
                 return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
                     .toISOString()
                     .slice(0, 16);
             };
-
+            
             startTimeInput.value = formatDateTimeLocal(start);
             endTimeInput.value = formatDateTimeLocal(end);
             durationInput.value = formatDurationHours(durationMs);
@@ -1338,7 +1309,7 @@
         function updateDuration() {
             const startTime = new Date(document.getElementById('startTime').value);
             const endTime = new Date(document.getElementById('endTime').value);
-
+            
             if (!isNaN(startTime) && !isNaN(endTime)) {
                 const durationMs = endTime - startTime;
                 if (durationMs >= 0) {
