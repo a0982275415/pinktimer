@@ -600,10 +600,9 @@
                 console.log('資料寫入完成:', updateResponse);
                 return true;
             } catch (error) {
-    console.error('寫入試算表時發生錯誤:', error, error.result);
-    alert('詳細錯誤：' + (error.result?.error?.message || error.message || '未知錯誤'));
-    throw new Error(error.message || '寫入資料時發生錯誤');
-}
+                console.error('寫入試算表時發生錯誤:', error);
+                throw new Error(error.message || '寫入資料時發生錯誤');
+            }
         }
 
         // 修改匯出功能
